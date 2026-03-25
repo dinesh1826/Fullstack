@@ -1,0 +1,192 @@
+---------------
+workbench
+---------
+use task3;
+CREATE TABLE users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    email VARCHAR(100) UNIQUE,
+    password VARCHAR(100)
+);
+INSERT INTO users (email, password)
+VALUES ('admin@gmail.com', '12345');
+SELECT * FROM users;
+--------------------------------------
+login.html
+-------------
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login Page</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="login-box">
+    <h2>Login</h2>
+
+    <input type="email" id="email" placeholder="Enter Email">
+    <input type="password" id="password" placeholder="Enter Password">
+
+    <button onclick="login()">Login</button>
+
+    <p id="message"></p>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
+----------------------------------------------
+style.css
+--------------
+body {
+    font-family: Arial;
+    background-color: #f2f2f2;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.login-box {
+    background: white;
+    padding: 30px;
+    width: 300px;
+    text-align: center;
+    border-radius: 8px;
+}
+
+input {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+}
+
+button {
+    width: 100%;
+    padding: 10px;
+    background-color: blue;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+#message {
+    margin-top: 10px;
+}
+---------------------------------------------------------
+script.js
+-----------------
+async function login() {
+
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value.trim();
+    const message = document.getElementById("message");
+
+    
+    if (!email || !password) {
+        message.style.color = "red";
+        message.innerText = "All fields are required";
+        return;
+    }
+
+    if (!email.includes("@")) {
+        message.style.color = "red";
+        message.innerText = "Enter valid email";
+        return;
+    }
+
+    try {
+        const response = await fetch("http://localhost:4000/login", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ email, password })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            message.style.color = "green";
+            message.innerText = "Login Successful ";
+        } else {
+            message.style.color = "red";
+            message.innerText = data.message;
+        }
+
+    } catch (error) {
+        message.style.color = "red";
+        message.innerText = "Server Error";
+    }
+}
+-----------------------------------------------------
+server.js
+------------
+const express = require('express');
+const mysql = require('mysql2');
+const cors = require('cors');
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+// 🔹 Database Connection
+const db = mysql.createConnection({
+    host: 'localhost',
+    user: 'root',
+    password: '7993445360', // change if needed
+    database: 'task3'
+});
+
+db.connect((err) => {
+    if (err) {
+        console.error('Database connection failed:', err);
+        process.exit(1);
+    }
+    console.log('Connected to task3 database');
+});
+
+// 🔹 Login Route
+app.post('/login', (req, res) => {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+        return res.status(400).json({
+            success: false,
+            message: "All fields are required"
+        });
+    }
+
+    const query = 'SELECT * FROM users WHERE email = ? AND password = ?';
+
+    db.query(query, [email, password], (err, result) => {
+        if (err) {
+            return res.status(500).json({
+                success: false,
+                message: err.message
+            });
+        }
+
+        if (result.length === 0) {
+            return res.status(401).json({
+                success: false,
+                message: "Invalid email or password"
+            });
+        }
+
+        res.json({
+            success: true,
+            message: "Login successful"
+        });
+    });
+});
+
+app.listen(4000, () => {
+    console.log("Server running on http://localhost:4000");
+});
+---------------------------------------------------------------------
+commands to run:
+npm init -y
+npm install express mysql2 cors
+node server.js
+----------------------------------------------------------
