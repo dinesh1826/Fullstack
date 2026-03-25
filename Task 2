@@ -1,0 +1,228 @@
+------------
+workbench 
+--------------
+use task2;
+CREATE TABLE student (id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(100),email VARCHAR(100),dept VARCHAR(50),DOB DATE);
+INSERT INTO student (name, email, dept, DOB) VALUES
+('Arjun', 'arjun@gmail.com', 'CSE', '2002-01-10'),
+('Bhavya', 'bhavya@gmail.com', 'ECE', '2001-11-12'),
+('Charan', 'charan@gmail.com', 'EEE', '2003-03-05'),
+('Divya', 'divya@gmail.com', 'CSE', '2002-08-21'),
+('Esha', 'esha@gmail.com', 'ECE', '2001-02-14');
+SELECT * FROM student;
+------------------
+html
+--------------
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Student Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<h1>Student Dashboard</h1>
+
+<select id="deptFilter">
+    <option value="">All Departments</option>
+    <option value="CSE">CSE</option>
+    <option value="ECE">ECE</option>
+    <option value="EEE">EEE</option>
+</select>
+
+<button onclick="sortName()">Sort by Name</button>
+<button onclick="sortDOB()">Sort by DOB</button>
+
+<h3 id="countSection"></h3>
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Department</th>
+            <th>DOB</th>
+        </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+</table>
+
+<script src="script.js"></script>
+</body>
+</html>
+-------------------------
+style.css
+----------------
+body {
+    font-family: Arial;
+    padding: 20px;
+}
+
+button, select {
+    padding: 8px;
+    margin: 5px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+th, td {
+    border: 1px solid gray;
+    padding: 10px;
+    text-align: center;
+}
+
+th {
+    background-color: #f2f2f2;
+}
+------------------------------------------
+script.js
+------------------
+const API = "http://localhost:3000";
+
+async function fetchStudents(query = "") {
+    const res = await fetch(`${API}/students${query}`);
+    const data = await res.json();
+    renderTable(data.data);
+}
+
+function renderTable(data) {
+    const tableBody = document.getElementById("tableBody");
+    tableBody.innerHTML = "";
+
+    data.forEach(student => {
+        tableBody.innerHTML += `
+            <tr>
+                <td>${student.name}</td>
+                <td>${student.email}</td>
+                <td>${student.dept}</td>
+                <td>${student.DOB.split("T")[0]}</td>
+            </tr>
+        `;
+    });
+}
+
+function sortName() {
+    fetchStudents("?sortBy=name");
+}
+
+function sortDOB() {
+    fetchStudents("?sortBy=dob");
+}
+
+document.getElementById("deptFilter").addEventListener("change", function () {
+    const dept = this.value;
+    if (dept) {
+        fetchStudents(`?dept=${dept}`);
+    } else {
+        fetchStudents();
+    }
+});
+
+async function fetchCount() {
+    const res = await fetch(`${API}/students/count`);
+    const data = await res.json();
+
+    let text = "Department Count: ";
+    data.data.forEach(d => {
+        text += `${d.dept} = ${d.total}  `;
+    });
+
+    document.getElementById("countSection").innerText = text;
+}
+
+fetchStudents();
+fetchCount();
+-----------------------------------
+server.js
+------------------------
+const express = require('express');
+const mysql = require('mysql2');
+const cors = require('cors');
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+const db = mysql.createConnection({
+    host: 'localhost',
+    user: 'root',
+    password: '7993445360', // change if needed
+    database: 'task2'
+});
+
+db.connect((err) => {
+    if (err) {
+        console.error('Database connection failed:', err);
+        process.exit(1);
+    }
+    console.log('Connected to MySQL Database');
+});
+
+app.get('/students', (req, res) => {
+    const { sortBy, dept } = req.query;
+
+    let query = 'SELECT name, email, dept, DOB FROM student';
+    let values = [];
+
+    if (dept) {
+        query += ' WHERE dept = ?';
+        values.push(dept);
+    }
+
+    if (sortBy === 'name') {
+        query += ' ORDER BY name ASC';
+    } else if (sortBy === 'dob') {
+        query += ' ORDER BY DOB ASC';
+    }
+
+    db.query(query, values, (err, result) => {
+        if (err) {
+            return res.status(500).json({
+                success: false,
+                message: err.message
+            });
+        }
+
+        res.json({
+            success: true,
+            data: result
+        });
+    });
+});
+
+app.get('/students/count', (req, res) => {
+    const query = `
+        SELECT dept, COUNT(*) AS total
+        FROM student
+        GROUP BY dept
+    `;
+
+    db.query(query, (err, result) => {
+        if (err) {
+            return res.status(500).json({
+                success: false,
+                message: err.message
+            });
+        }
+
+        res.json({
+            success: true,
+            data: result
+        });
+    });
+});
+
+const PORT = 3000;
+app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+});
+---------------------------------
+commands to run:
+npm init -y
+npm install express mysql2 cors
+node server.js
+----------------------------------------------------------------------
