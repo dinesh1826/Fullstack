@@ -1,0 +1,105 @@
+------------------
+login.html
+----------------------
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Feedback Form</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="form-container">
+    <h2>Feedback Form</h2>
+
+    <input type="text" id="name" placeholder="Enter Name">
+    <input type="email" id="email" placeholder="Enter Email">
+    <textarea id="message" placeholder="Enter Feedback"></textarea>
+
+    <button id="submitBtn">Submit</button>
+
+    <p id="result"></p>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
+-----------------------------------------------------------------------------------
+style.css
+------------------------------
+body {
+    font-family: Arial;
+    background: #f2f2f2;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.form-container {
+    background: white;
+    padding: 30px;
+    width: 300px;
+}
+
+input, textarea {
+    width: 100%;
+    margin: 10px 0;
+    padding: 8px;
+}
+
+.highlight {
+    border: 2px solid blue;
+}
+-----------------------------------------------------------------
+script.js
+-----------------------------
+const nameField = document.getElementById("name");
+const emailField = document.getElementById("email");
+const messageField = document.getElementById("message");
+const submitBtn = document.getElementById("submitBtn");
+const result = document.getElementById("result");
+
+/* Reusable Validation Function */
+function isEmpty(value) {
+    return value.trim() === "";
+}
+
+/* Keypress Validation */
+nameField.addEventListener("keyup", () => {
+    if (isEmpty(nameField.value)) {
+        nameField.style.border = "2px solid red";
+    } else {
+        nameField.style.border = "2px solid green";
+    }
+});
+
+/* Mouse Hover Highlight */
+[nameField, emailField, messageField].forEach(field => {
+    field.addEventListener("mouseover", () => {
+        field.classList.add("highlight");
+    });
+
+    field.addEventListener("mouseout", () => {
+        field.classList.remove("highlight");
+    });
+});
+
+/* Double Click Submit */
+submitBtn.addEventListener("dblclick", () => {
+
+    if (
+        isEmpty(nameField.value) ||
+        isEmpty(emailField.value) ||
+        isEmpty(messageField.value)
+    ) {
+        result.style.color = "red";
+        result.innerText = "All fields required!";
+        return;
+    }
+
+    result.style.color = "green";
+    result.innerText = "Feedback Submitted Successfully ";
+});
+----------------------------------------------------------------------------------------
